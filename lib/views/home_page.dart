@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_tbc/main.dart';
-// import 'package:tbc_data_app/views/add_edit_patient_page.dart'; // DIHAPUS
-// import 'package:tbc_data_app/views/patient_list_page.dart'; // DIHAPUS
+import 'package:app_tbc/views/patient_biodata_page.dart';
+import 'package:app_tbc/views/patient_list_page.dart';
+import 'package:app_tbc/views/login_page.dart'; // BARU: Impor untuk navigasi logout
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,7 +22,6 @@ class _HomePageState extends State<HomePage> {
     _fetchUserName();
   }
 
-  /// Mengambil nama lengkap pengguna dari tabel 'profiles'
   Future<void> _fetchUserName() async {
     try {
       final userId = supabase.auth.currentUser!.id;
@@ -45,13 +45,54 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // BARU: Fungsi untuk menangani logout
+  Future<void> _signOut() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Logout'),
+          content: const Text('Apakah Anda yakin ingin keluar?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      try {
+        await supabase.auth.signOut();
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+          );
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: const Text('Gagal logout, coba lagi.'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Latar belakang dekoratif
           Positioned(
             top: -100,
             right: -100,
@@ -64,7 +105,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          // Konten utama
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -72,23 +112,29 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  // Header
+                  // DIUBAH: Header dengan tombol logout
                   Row(
                     children: [
-                      Image.asset('assets/logo.png', height: 40),
-                      const SizedBox(width: 10),
+                      Image.asset('assets/logo.png', height: 60),
+                      const SizedBox(width: 0),
                       const Text(
                         'Gesit TBC',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF003333),
                         ),
                       ),
+                      const Spacer(), // Mendorong tombol ke kanan
+                      IconButton(
+                        icon: const Icon(Icons.logout, color: Colors.black, size: 28),
+                        onPressed: _signOut,
+                        tooltip: 'Logout',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 40),
-                  // Welcome Message
+                  // Welcome Message (dan sisa UI lainnya tetap sama)
                   const Text(
                     'Selamat Datang,',
                     style: TextStyle(fontSize: 20, color: Colors.black54),
@@ -107,7 +153,6 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(fontSize: 14, color: Colors.black45),
                   ),
                   const SizedBox(height: 40),
-                  // Menu Grid
                   const Text(
                     'Pilih Menu',
                     style: TextStyle(
@@ -127,42 +172,39 @@ class _HomePageState extends State<HomePage> {
                       _buildMenuCard(
                         icon: Icons.lightbulb_outline,
                         title: 'Pengertian\nTBC',
-                        onTap: () {}, // Navigasi dinonaktifkan
+                        onTap: () {},
                       ),
                       _buildMenuCard(
                         icon: Icons.health_and_safety_outlined,
                         title: 'Cara\nPencegahan',
-                        onTap: () {}, // Navigasi dinonaktifkan
+                        onTap: () {},
                       ),
                       _buildMenuCard(
                         icon: Icons.sick_outlined,
                         title: 'Penyebab &\nGejala TBC',
-                        onTap: () {}, // Navigasi dinonaktifkan
+                        onTap: () {},
                       ),
                       _buildMenuCard(
                         icon: Icons.healing_outlined,
                         title: 'Cara\nPenanganan',
-                        onTap: () {}, // Navigasi dinonaktifkan
+                        onTap: () {},
                       ),
                       _buildMenuCard(
                         icon: Icons.groups_outlined,
                         title: 'Daftar\nPasien',
-                        // --- PERUBAHAN DI SINI ---
                         onTap: () {
-                          // Navigasi dinonaktifkan untuk sementara
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Fitur ini akan segera hadir!'))
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const PatientListPage()),
                           );
                         },
+
                       ),
                       _buildMenuCard(
                         icon: Icons.edit_document,
                         title: 'Pelaporan',
-                        // --- PERUBAHAN DI SINI ---
                         onTap: () {
-                          // Navigasi dinonaktifkan untuk sementara
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Fitur ini akan segera hadir!'))
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (context) => const PatientBiodataPage()),
                           );
                         },
                       ),
@@ -174,7 +216,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      // Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -198,7 +239,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// Helper widget untuk membuat kartu menu
   Widget _buildMenuCard({
     required IconData icon,
     required String title,
